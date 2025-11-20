@@ -1,0 +1,7 @@
+Flask==2.3.3
+requests==2.32.4
+debugpy # Required for debugging.
+google-cloud-bigquery
+google-generativeai
+python-dotenv
+werkzeug
