@@ -1,7 +1,18 @@
-Flask==2.3.3
+Flask[async]==2.3.3
+flask==2.3.3
 requests==2.32.4
-debugpy # Required for debugging.
+debugpy
 google-cloud-bigquery
 google-generativeai
+google-genai
+mcp
 python-dotenv
 werkzeug
+uvicorn
+jinja2
+python-multipart
+uv
+asgiref
+gunicorn
+google-auth
+httpx

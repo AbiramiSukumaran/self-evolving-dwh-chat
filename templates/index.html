@@ -6,10 +6,20 @@
     <title>Gemini 3.0 Industry Analyst</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Marked for Markdown rendering in chat -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-track { background: #1e293b; }
+        .chat-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        .prose p { margin-bottom: 0.5rem; }
+        .prose pre { background: #0f172a; padding: 0.5rem; border-radius: 0.3rem; overflow-x: auto; }
+    </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-6">
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-6 relative">
 
-    <div class="max-w-4xl w-full p-8 bg-slate-800 rounded-xl shadow-2xl border border-slate-700">
+    <!-- === ORIGINAL DASHBOARD === -->
+    <div class="max-w-4xl w-full p-8 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 z-10">
         <h1 class="text-3xl font-bold mb-2 text-blue-400">Gemini 3.0 Industry Analyst</h1>
         <p class="text-slate-400 mb-8">Analyze local videos or public links (YouTube, etc).</p>
 
@@ -20,7 +30,7 @@
                 <button id="tab-url" class="px-4 py-2 text-slate-400 hover:text-blue-300 focus:outline-none">Paste Link</button>
             </div>
 
-            <!-- File Upload Area -->
+            <!-- File Upload -->
             <div id="input-file-area" class="border-2 border-dashed border-slate-600 rounded-lg p-12 text-center hover:border-blue-500 transition cursor-pointer relative">
                 <input type="file" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="video/*">
                 <div id="upload-text">
@@ -29,7 +39,7 @@
                 </div>
             </div>
 
-            <!-- URL Input Area -->
+            <!-- URL Input -->
             <div id="input-url-area" class="hidden">
                 <div class="flex gap-2">
                     <input type="text" id="urlInput" placeholder="Paste YouTube or Public Video Link here..." 
@@ -42,29 +52,22 @@
             </div>
         </div>
 
-        <!-- Loading State -->
+        <!-- Loading -->
         <div id="loading" class="hidden text-center py-8">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
             <p class="text-blue-300 animate-pulse text-lg">Downloading & Analyzing...</p>
-            <p class="text-slate-500 text-sm mt-2">(Larger videos may take a minute to process)</p>
         </div>
 
-        <!-- Analysis Results -->
+        <!-- Results -->
         <div id="results" class="mt-8 hidden space-y-8">
-            
-            <!-- Header Info -->
             <div class="bg-slate-900 p-4 rounded border-l-4 border-blue-500">
                 <h2 class="text-xl font-bold">Industry: <span id="industry-name" class="text-blue-300 font-mono"></span></h2>
                 <p class="text-sm text-slate-400 mt-1">Table: <span id="table-name" class="font-mono bg-slate-800 px-1 rounded"></span></p>
             </div>
-
-            <!-- Charts Grid -->
             <div>
                 <h3 class="text-lg font-semibold mb-4 text-slate-300">Performance vs. Industry</h3>
                 <div id="charts-container" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
             </div>
-
-            <!-- Strategic Advice -->
             <div class="bg-slate-700 p-6 rounded-lg border border-slate-600">
                 <h3 class="text-lg font-bold text-yellow-400 mb-2">Strategic Advice</h3>
                 <div id="advice-text" class="text-slate-200 leading-relaxed whitespace-pre-line"></div>
@@ -72,17 +75,42 @@
         </div>
     </div>
 
+    <!-- === CHAT WIDGET === -->
+    <button id="chat-toggle-btn" class="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-full shadow-lg transition z-50 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+    </button>
+
+    <div id="chat-window" class="fixed bottom-24 right-6 w-96 h-[500px] bg-slate-800 border border-slate-600 rounded-xl shadow-2xl flex flex-col z-50 transform translate-y-[120%] transition-transform duration-300 ease-out hidden">
+        <div class="p-4 bg-slate-900 border-b border-slate-700 rounded-t-xl flex justify-between items-center">
+            <h3 class="font-bold text-white">BigQuery Analyst</h3>
+            <button id="chat-close-btn" class="text-slate-400 hover:text-white">✕</button>
+        </div>
+        <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4 chat-scroll bg-slate-800">
+            <div class="flex justify-start">
+                <div class="bg-slate-700 text-slate-200 p-3 rounded-2xl rounded-tl-none max-w-[85%] text-sm">
+                    Hello! Ask me about your video data.
+                </div>
+            </div>
+        </div>
+        <div class="p-4 bg-slate-900 border-t border-slate-700 rounded-b-xl">
+            <form id="chat-form" class="flex gap-2">
+                <input type="text" id="chat-input" placeholder="Query data..." class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-lg">➜</button>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // DOM Elements
+        // --- DASHBOARD LOGIC ---
         const tabFile = document.getElementById('tab-file');
         const tabUrl = document.getElementById('tab-url');
         const inputFileArea = document.getElementById('input-file-area');
         const inputUrlArea = document.getElementById('input-url-area');
-        
         const fileInput = document.getElementById('fileInput');
         const urlInput = document.getElementById('urlInput');
         const urlSubmitBtn = document.getElementById('urlSubmitBtn');
-        
         const loading = document.getElementById('loading');
         const results = document.getElementById('results');
         const industryNameEl = document.getElementById('industry-name');
@@ -90,13 +118,8 @@
         const chartsContainer = document.getElementById('charts-container');
         const adviceTextEl = document.getElementById('advice-text');
 
-        // Tab Logic
-        tabFile.addEventListener('click', () => {
-            toggleTabs(true);
-        });
-        tabUrl.addEventListener('click', () => {
-            toggleTabs(false);
-        });
+        tabFile.addEventListener('click', () => toggleTabs(true));
+        tabUrl.addEventListener('click', () => toggleTabs(false));
 
         function toggleTabs(isFile) {
             if (isFile) {
@@ -116,102 +139,120 @@
             }
         }
 
-        // Handlers
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files[0]) handleSubmission({ file: e.target.files[0] });
-        });
-
-        urlSubmitBtn.addEventListener('click', () => {
-            if (urlInput.value.trim()) handleSubmission({ url: urlInput.value.trim() });
-        });
-
         async function handleSubmission(payload) {
-            // UI Reset
             loading.classList.remove('hidden');
             results.classList.add('hidden');
-            inputFileArea.classList.add('opacity-50', 'pointer-events-none');
-            inputUrlArea.classList.add('opacity-50', 'pointer-events-none');
-            chartsContainer.innerHTML = ''; 
-
             const formData = new FormData();
-            if (payload.file) {
-                formData.append('video', payload.file);
-            } else if (payload.url) {
-                formData.append('video_url', payload.url);
-            }
+            if (payload.file) formData.append('video', payload.file);
+            else if (payload.url) formData.append('video_url', payload.url);
 
             try {
                 const response = await fetch('/upload', { method: 'POST', body: formData });
                 const data = await response.json();
-                
                 loading.classList.add('hidden');
-                inputFileArea.classList.remove('opacity-50', 'pointer-events-none');
-                inputUrlArea.classList.remove('opacity-50', 'pointer-events-none');
-                
-                if(data.status === 'skipped_duplicate') {
-                    alert("Duplicate Video! " + data.message);
-                    return;
-                }
-
-                if(data.error) {
-                    alert("Error: " + data.error);
-                    return;
-                }
-
+                if(data.error) { alert("Error: " + data.error); return; }
                 results.classList.remove('hidden');
-                renderResults(data);
-
+                
+                // Render Data
+                industryNameEl.textContent = (data.routed_to_table || 'N/A').replace(/_/g, ' ').toUpperCase();
+                tableNameEl.textContent = data.routed_to_table || '';
+                adviceTextEl.textContent = data.strategic_advice || 'No advice generated.';
+                
+                // Charts
+                chartsContainer.innerHTML = '';
+                const metrics = data.my_stats || {};
+                const benchmarks = data.benchmarks || {};
+                Object.keys(metrics).forEach((key, index) => {
+                    if (benchmarks[key]) {
+                        const canvasId = `chart-${index}`;
+                        const wrapper = document.createElement('div');
+                        wrapper.className = 'bg-slate-900 p-4 rounded-lg shadow';
+                        wrapper.innerHTML = `<h4 class="text-center text-sm mb-2 capitalize text-blue-200">${key.replace(/_/g, ' ')}</h4><canvas id="${canvasId}"></canvas>`;
+                        chartsContainer.appendChild(wrapper);
+                        const ctx = document.getElementById(canvasId).getContext('2d');
+                        new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: ['Your Video', 'Industry Avg', 'Top Performer'],
+                                datasets: [{
+                                    label: key,
+                                    data: [metrics[key], benchmarks[key].industry_avg, benchmarks[key].industry_top],
+                                    backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(148, 163, 184, 0.5)', 'rgba(34, 197, 94, 0.6)'],
+                                    borderColor: ['rgba(59, 130, 246, 1)', 'rgba(148, 163, 184, 1)', 'rgba(34, 197, 94, 1)'],
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#334155' } } } }
+                        });
+                    }
+                });
             } catch (error) {
                 alert('Error: ' + error);
                 loading.classList.add('hidden');
-                inputFileArea.classList.remove('opacity-50', 'pointer-events-none');
-                inputUrlArea.classList.remove('opacity-50', 'pointer-events-none');
             }
         }
 
-        function renderResults(data) {
-            industryNameEl.textContent = data.routed_to_table.replace(/_/g, ' ').toUpperCase();
-            tableNameEl.textContent = data.routed_to_table;
-            adviceTextEl.textContent = data.strategic_advice;
+        fileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleSubmission({ file: e.target.files[0] }); });
+        urlSubmitBtn.addEventListener('click', () => { if (urlInput.value.trim()) handleSubmission({ url: urlInput.value.trim() }); });
 
-            const metrics = data.my_stats || {};
-            const benchmarks = data.benchmarks || {};
+        // --- CHAT LOGIC ---
+        const chatToggleBtn = document.getElementById('chat-toggle-btn');
+        const chatWindow = document.getElementById('chat-window');
+        const chatCloseBtn = document.getElementById('chat-close-btn');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const chatInput = document.getElementById('chat-input');
 
-            if (Object.keys(metrics).length === 0) {
-                chartsContainer.innerHTML = '<p class="text-slate-500 col-span-2 text-center">No numeric metrics found to chart.</p>';
-                return;
+        chatToggleBtn.addEventListener('click', () => {
+            chatWindow.classList.toggle('hidden');
+            if(!chatWindow.classList.contains('hidden')) {
+                chatWindow.classList.remove('translate-y-[120%]');
+                chatWindow.classList.add('translate-y-0');
             }
+        });
+        chatCloseBtn.addEventListener('click', () => {
+             chatWindow.classList.add('hidden');
+        });
 
-            Object.keys(metrics).forEach((key, index) => {
-                if (benchmarks[key]) {
-                    const canvasId = `chart-${index}`;
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'bg-slate-900 p-4 rounded-lg shadow';
-                    wrapper.innerHTML = `<h4 class="text-center text-sm mb-2 capitalize text-blue-200">${key.replace(/_/g, ' ')}</h4><canvas id="${canvasId}"></canvas>`;
-                    chartsContainer.appendChild(wrapper);
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msg = chatInput.value.trim();
+            if(!msg) return;
 
-                    const ctx = document.getElementById(canvasId).getContext('2d');
-                    new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: ['Your Video', 'Industry Avg', 'Top Performer'],
-                            datasets: [{
-                                label: key,
-                                data: [metrics[key], benchmarks[key].industry_avg, benchmarks[key].industry_top],
-                                backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(148, 163, 184, 0.5)', 'rgba(34, 197, 94, 0.6)'],
-                                borderColor: ['rgba(59, 130, 246, 1)', 'rgba(148, 163, 184, 1)', 'rgba(34, 197, 94, 1)'],
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            plugins: { legend: { display: false } },
-                            scales: { y: { beginAtZero: true, grid: { color: '#334155' }, ticks: { color: '#94a3b8'} }, x: { ticks: { color: '#94a3b8'} } }
-                        }
-                    });
-                }
-            });
-        }
+            // Add User Msg
+            const userDiv = document.createElement('div');
+            userDiv.className = 'flex justify-end';
+            userDiv.innerHTML = `<div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none max-w-[85%] text-sm">${msg}</div>`;
+            chatMessages.appendChild(userDiv);
+            chatInput.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Add Loading
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'flex justify-start';
+            loadingDiv.innerHTML = `<div class="bg-slate-700 text-slate-400 p-3 rounded-2xl rounded-tl-none text-sm">Typing...</div>`;
+            chatMessages.appendChild(loadingDiv);
+
+            try {
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: msg})
+                });
+                const data = await res.json();
+                loadingDiv.remove();
+
+                const botDiv = document.createElement('div');
+                botDiv.className = 'flex justify-start';
+                // Use marked to parse markdown
+                botDiv.innerHTML = `<div class="bg-slate-700 text-slate-200 p-3 rounded-2xl rounded-tl-none max-w-[85%] text-sm prose prose-invert">${marked.parse(data.response || "Error")}</div>`;
+                chatMessages.appendChild(botDiv);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            } catch(err) {
+                loadingDiv.remove();
+                alert("Chat Error: " + err);
+            }
+        });
     </script>
 </body>
 </html>
